@@ -1,0 +1,14 @@
+acgpn_dataset/
+images/
+label2city/
+ACGPN_inference/.idea/
+ACGPN_inference/__pycache__/
+ACGPN_inference/runs/
+ACGPN_inference/sample/
+ACGPN_inference_mine/.idea
+ACGPN_inference_mine/.ipynb_checkpoints
+*/__pycache__/
+*/sample/
+*pth
+images/
+label2city/
