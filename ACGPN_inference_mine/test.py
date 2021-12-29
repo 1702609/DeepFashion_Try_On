@@ -131,7 +131,7 @@ for epoch in range(start_epoch, opt.niter + opt.niter_decay + 1):
             Variable(data['label'].cuda()), Variable(data['edge'].cuda()), Variable(img_fore.cuda()),
             Variable(mask_clothes.cuda())
             , Variable(data['color'].cuda()), Variable(all_clothes_label.cuda()), Variable(data['image'].cuda()),
-            Variable(data['pose'].cuda()), Variable(data['image'].cuda()), Variable(mask_fore.cuda()),
+            Variable(data['skeleton'].cuda()), Variable(data['image'].cuda()), Variable(mask_fore.cuda()),
             Variable(data['body_mask'].cuda()))
 
         # sum per device losses

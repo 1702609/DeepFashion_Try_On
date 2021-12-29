@@ -19,7 +19,7 @@ class TrainOptions(BaseOptions):
                                  help='only do one epoch and displays at each iteration')
 
         # for training
-        self.parser.add_argument('--load_pretrain', type=str, default='../label2city',
+        self.parser.add_argument('--load_pretrain', type=str, default='../label2city/mine/',
                                  help='load the pretrained model from the specified location')
         self.parser.add_argument('--which_epoch', type=str, default='latest',
                                  help='which epoch to load? set to latest to use latest cached model')

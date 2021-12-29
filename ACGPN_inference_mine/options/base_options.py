@@ -45,7 +45,7 @@ class BaseOptions():
         # for setting inputs
         self.parser.add_argument(
             '--dataroot', type=str, default='../../after_vton_difficult_v2/')
-        self.parser.add_argument('--datapairs', type=str, default='single_person.txt',
+        self.parser.add_argument('--datapairs', type=str, default='single_person2.txt',
                                  help='train_pairs.txt/test_pairs.txt/test_pairs_same.txt etc.')
 
         self.parser.add_argument('--resize_or_crop', type=str, default='scale_width',
