@@ -21,7 +21,7 @@ class TrainOptions(BaseOptions):
         # for training
         self.parser.add_argument('--load_pretrain', type=str, default='../label2city/mine/',
                                  help='load the pretrained model from the specified location')
-        self.parser.add_argument('--which_epoch', type=str, default='latest',
+        self.parser.add_argument('--which_epoch', type=str, default='best',
                                  help='which epoch to load? set to latest to use latest cached model')
         self.parser.add_argument(
             '--phase', type=str, default='test', help='train, val, test, etc')

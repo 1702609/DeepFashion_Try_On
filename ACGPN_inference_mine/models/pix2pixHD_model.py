@@ -53,6 +53,21 @@ def morpho(mask,iter,bigger=True):
     new=torch.FloatTensor(new).cuda()
     return new
 
+def ger_average_color(mask, arms):
+    color = torch.zeros(arms.shape).cuda()
+    for i in range(arms.shape[0]):
+        count = len(torch.nonzero(mask[i, :, :, :]))
+        if count < 10:
+            color[i, 0, :, :] = 0
+            color[i, 1, :, :] = 0
+            color[i, 2, :, :] = 0
+
+        else:
+            color[i, 0, :, :] = arms[i, 0, :, :].sum() / count
+            color[i, 1, :, :] = arms[i, 1, :, :].sum() / count
+            color[i, 2, :, :] = arms[i, 2, :, :].sum() / count
+    return color
+
 def morpho_smaller(mask,iter,bigger=True):
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (1, 1))
     new=[]
@@ -69,6 +84,16 @@ def morpho_smaller(mask,iter,bigger=True):
     new=np.stack(new)
     new=torch.FloatTensor(new).cuda()
     return new
+
+def changearm(old_label):
+    label=old_label.cpu()
+    arm1=torch.FloatTensor((label.cpu().numpy()==11).astype(np.int))
+    arm2=torch.FloatTensor((label.cpu().numpy()==13).astype(np.int))
+    noise=torch.FloatTensor((label.cpu().numpy()==7).astype(np.int))
+    label=label*(1-arm1)+arm1*4
+    label=label*(1-arm2)+arm2*4
+    label=label*(1-noise)+noise*4
+    return label
 
 class Pix2PixHDModel(BaseModel):
     def name(self):
@@ -135,8 +160,8 @@ class Pix2PixHDModel(BaseModel):
         netG_input_nc = input_nc
         # Main Generator
         with torch.no_grad():
-            self.Unet = networks.define_UnetMask(4, self.gpu_ids).eval()
-            self.G1 = networks.define_G1(7, 14, self.gpu_ids).eval()
+            self.Unet = networks.define_UnetMask(7, 3).eval()
+            self.G1 = networks.define_G(7, 4).eval()
             self.G = networks.define_Refine(11, 3, self.gpu_ids).eval()
 
         self.tanh = nn.Tanh()
@@ -149,9 +174,13 @@ class Pix2PixHDModel(BaseModel):
         # load networks
         if not self.isTrain or opt.continue_train or opt.load_pretrain:
             pretrained_path = '' if not self.isTrain else opt.load_pretrain
-            self.load_network(self.Unet, 'U', opt.which_epoch, pretrained_path)
-            self.load_network(self.G1, 'G1', opt.which_epoch, pretrained_path)
-            self.load_network(self.G, 'G', opt.which_epoch, pretrained_path)
+            #self.load_network(self.Unet, 'U', opt.which_epoch, pretrained_path)
+            self.Unet.load_state_dict(torch.load("../label2city/mine/gmm_affine_21.pth"))
+            #self.load_network(self.G1, 'G1', opt.which_epoch, pretrained_path)
+            self.G1.load_state_dict(torch.load("../label2city/mine/G1_blurry_mask_30_.pth"))
+            #self.load_network(self.G, 'G', opt.which_epoch, pretrained_path)
+            self.G.load_state_dict(torch.load("../label2city/mine/G3_epoch105.pth"))
+
         # set loss functions and optimizers
         if self.isTrain:
             if opt.pool_size > 0 and (len(self.gpu_ids)) > 1:
@@ -248,55 +277,76 @@ class Pix2PixHDModel(BaseModel):
         out+=(1-mask)*fake_img
         return out
 
-    def forward(self, label, pre_clothes_mask, img_fore, clothes_mask, clothes, all_clothes_label, real_image, skeleton,grid,mask_fore, body_mask):
+    def forward(self, data):
         # Encode Inputs
-        input_label, masked_label, all_clothes_label = self.encode_input(label, clothes_mask, all_clothes_label)
-        arm1_mask = torch.FloatTensor((label.cpu().numpy() == 11).astype(np.float)).cuda()
-        arm2_mask = torch.FloatTensor((label.cpu().numpy() == 13).astype(np.float)).cuda()
+        all_clothes_label = changearm(data['label'])
+        mask_clothes = torch.FloatTensor((data['label'].cpu().numpy() == 4).astype(np.int))
+        mask_fore = torch.FloatTensor((data['label'].cpu().numpy() > 0).astype(np.int)).cuda()
+        img_fore = data['image'] * mask_fore
+
+        in_label = Variable(data['label'].cuda())
+        in_edge = Variable(data['edge'].cuda())
+        in_img_fore = Variable(img_fore.cuda())
+        in_mask_clothes = Variable(mask_clothes.cuda())
+        in_color = Variable(data['color'].cuda())
+        in_all_clothes_label = Variable(all_clothes_label.cuda())
+        in_image = Variable(data['image'].cuda())
+        in_mask_fore = Variable(mask_fore.cuda())
+        in_skeleton = Variable(data['skeleton'].cuda())
+        in_blurry = Variable(data['blurry'].cuda())
+
+        pre_clothes_mask = torch.FloatTensor((in_edge.detach().cpu().numpy() > 0.5).astype(np.float)).cuda()
+        shape = pre_clothes_mask.shape
+        clothes = in_color * pre_clothes_mask
+
+        arm1_mask = torch.FloatTensor((in_label.cpu().numpy() == 11).astype(np.float)).cuda()
+        arm2_mask = torch.FloatTensor((in_label.cpu().numpy() == 13).astype(np.float)).cuda()
         pre_clothes_mask=torch.FloatTensor((pre_clothes_mask.detach().cpu().numpy() > 0.5).astype(np.float)).cuda()
         clothes = clothes * pre_clothes_mask
         shape = pre_clothes_mask.shape
 
-        G1_in = torch.cat([body_mask, clothes, skeleton], dim=1)
+        sigmoid = nn.Sigmoid()
+        G1_in = torch.cat([in_blurry, clothes, in_skeleton], dim=1)
         arm_label = self.G1(G1_in)
+        arm_label = sigmoid(arm_label)
+
+        armlabel_map = generate_discrete_label(arm_label.detach(), 4, False)
+        dis_label = generate_discrete_label(arm_label.detach(), 4)
 
         arm_label = self.sigmoid(arm_label)
-        CE_loss = self.cross_entropy2d(arm_label, (label * (1 - clothes_mask)).transpose(0, 1)[0].long()) * 10
+        CE_loss = self.cross_entropy2d(arm_label, (in_label * (1 - in_mask_clothes)).transpose(0, 1)[0].long()) * 10
 
         armlabel_map = generate_discrete_label(arm_label.detach(), 14, False)
         fake_cl = torch.FloatTensor((armlabel_map.cpu().numpy() == 4).astype(np.float)).cuda()
-        CE_loss += self.BCE(fake_cl, clothes_mask) * 10
-
+        CE_loss += self.BCE(fake_cl, in_mask_clothes) * 10
 
         new_arm1_mask = torch.FloatTensor((armlabel_map.cpu().numpy() == 11).astype(np.float)).cuda()
         new_arm2_mask = torch.FloatTensor((armlabel_map.cpu().numpy() == 13).astype(np.float)).cuda()
 
-        arm1_occ = clothes_mask * new_arm1_mask
-        arm2_occ = clothes_mask * new_arm2_mask
+        arm1_occ = in_mask_clothes * new_arm1_mask
+        arm2_occ = in_mask_clothes * new_arm2_mask
         bigger_arm1_occ = morpho(arm1_occ, 10)
         bigger_arm2_occ = morpho(arm2_occ, 10)
-        arm1_full = arm1_occ + (1 - clothes_mask) * arm1_mask
-        arm2_full = arm2_occ + (1 - clothes_mask) * arm2_mask
+        arm1_full = arm1_occ + (1 - in_mask_clothes) * arm1_mask
+        arm2_full = arm2_occ + (1 - in_mask_clothes) * arm2_mask
         armlabel_map *= (1 - new_arm1_mask)
         armlabel_map *= (1 - new_arm2_mask)
         armlabel_map = armlabel_map * (1 - arm1_full) + arm1_full * 11
         armlabel_map = armlabel_map * (1 - arm2_full) + arm2_full * 13
         armlabel_map*=(1-fake_cl)
+        tanh = torch.nn.Tanh()
 
-        fake_c, warped, warped_mask,warped_grid= self.Unet(clothes, fake_cl, pre_clothes_mask,grid)
-        mask=fake_c[:,3,:,:]
-        mask=self.sigmoid(mask)*fake_cl
-        fake_c = self.tanh(fake_c[:,0:3,:,:])
-        fake_c=fake_c*(1-mask)+mask*warped
-        skin_color = self.ger_average_color((arm1_mask + arm2_mask - arm2_mask * arm1_mask),
-                                            (arm1_mask + arm2_mask - arm2_mask * arm1_mask) * real_image)
-        occlude = (1 - bigger_arm1_occ * (arm2_mask + arm1_mask+clothes_mask)) * (1 - bigger_arm2_occ * (arm2_mask + arm1_mask+clothes_mask))
-        img_hole_hand = img_fore * (1 - clothes_mask) * occlude * (1 - fake_cl)
-
-        G_in = torch.cat([img_hole_hand, armlabel_map, fake_c, skin_color, self.gen_noise(shape)], 1)
-
-        fake_image = self.G.refine(G_in.detach())
-        fake_image = self.tanh(fake_image)
+        fake_c, warped = self.Unet(clothes, fake_cl, in_skeleton)
+        fake_c=tanh(fake_c)
+        occlude = (1 - bigger_arm1_occ * (arm2_mask + arm1_mask + in_mask_clothes)) * \
+                  (1 - bigger_arm2_occ * (arm2_mask + arm1_mask + in_mask_clothes))
+        img_hole_hand = in_img_fore * \
+                        (1 - in_mask_clothes) * occlude * (1 - fake_cl)
+        skin_color = ger_average_color((arm1_mask + arm2_mask - arm2_mask * arm1_mask),
+                                      (arm1_mask + arm2_mask - arm2_mask * arm1_mask) * in_image)
+        G3_in = torch.cat([img_hole_hand, armlabel_map, fake_c, skin_color, self.gen_noise(shape)], 1)
+        fake_image = self.G(G3_in.detach())
+        fake_image = tanh(fake_image)
 
         loss_D_fake = 0
         loss_D_real = 0
@@ -309,7 +359,7 @@ class Pix2PixHDModel(BaseModel):
 
         return [self.loss_filter(loss_G_GAN, 0, loss_G_VGG, loss_D_real, loss_D_fake), fake_image,
                 clothes, arm_label
-            , L1_loss, style_loss, fake_cl, CE_loss,real_image,warped_grid]
+            , L1_loss, style_loss, fake_cl, CE_loss,in_image*in_mask_clothes,warped]
 
     def inference(self, label, label_ref, image_ref):
 

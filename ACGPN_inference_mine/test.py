@@ -112,27 +112,17 @@ for epoch in range(start_epoch, opt.niter + opt.niter_decay + 1):
     epoch_start_time = time.time()
     if epoch != start_epoch:
         epoch_iter = epoch_iter % dataset_size
-    for i, data in enumerate(dataloader, start=epoch_iter):
+    for data in dataloader:
 
         iter_start_time = time.time()
         total_steps += opt.batchSize
         epoch_iter += opt.batchSize
         save_fake = True
 
-        t_mask = torch.FloatTensor((data['label'].cpu().numpy() == 7).astype(np.float))
-        mask_clothes = torch.FloatTensor((data['label'].cpu().numpy() == 4).astype(np.int))
-        mask_fore = torch.FloatTensor((data['label'].cpu().numpy() > 0).astype(np.int))
-        img_fore = data['image'] * mask_fore
-        img_fore_wc = img_fore * mask_fore
-        all_clothes_label = changearm(data['label'])
 
         ############## Forward Pass ######################
-        losses, fake_image, real_image, input_label, L1_loss, style_loss, clothes_mask, CE_loss, rgb, alpha = model(
-            Variable(data['label'].cuda()), Variable(data['edge'].cuda()), Variable(img_fore.cuda()),
-            Variable(mask_clothes.cuda())
-            , Variable(data['color'].cuda()), Variable(all_clothes_label.cuda()), Variable(data['image'].cuda()),
-            Variable(data['skeleton'].cuda()), Variable(data['image'].cuda()), Variable(mask_fore.cuda()),
-            Variable(data['body_mask'].cuda()))
+        losses, fake_image, real_image, input_label, L1_loss, style_loss, \
+        clothes_mask, CE_loss, rgb, alpha = model(data)
 
         # sum per device losses
         losses = [torch.mean(x) if not isinstance(x, int) else x for x in losses]

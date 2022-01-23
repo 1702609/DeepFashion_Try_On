@@ -50,13 +50,13 @@ def fixSpots(image, arm):
 
     wanted_spot = list_of_spots[small_big_spot_index[-1]]
 
-    torso = main_image[4]
+    torso = main_image[1]
     for t in range(number_of_spots - 1):
         for i in range(size[0]):
             for j in range(size[1]):
                 if unwanted_spot[t][i][j] == 1:
                     torso[i][j] = 1
-    main_image[4] = torso
+    main_image[1] = torso
     main_image[arm] = wanted_spot
     return main_image
 

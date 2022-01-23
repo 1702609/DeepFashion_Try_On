@@ -2,12 +2,18 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="333174c3-d54d-481a-a6a2-8e28d582f7e8" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/../ACGPN_inference_mine/data/base_dataset.py" beforeDir="false" afterPath="$PROJECT_DIR$/../ACGPN_inference_mine/data/base_dataset.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../ACGPN_inference_mine/divide_nn.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/../ACGPN_inference_mine/divide_nn.ipynb" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../ACGPN_inference_mine/divide_nn_new_G1.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/../ACGPN_inference_mine/divide_nn_new_G1.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../ACGPN_inference_mine/fix_segmentation_spot.py" beforeDir="false" afterPath="$PROJECT_DIR$/../ACGPN_inference_mine/fix_segmentation_spot.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../ACGPN_inference_mine/models/base_model.py" beforeDir="false" afterPath="$PROJECT_DIR$/../ACGPN_inference_mine/models/base_model.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../ACGPN_inference_mine/models/networks.py" beforeDir="false" afterPath="$PROJECT_DIR$/../ACGPN_inference_mine/models/networks.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../ACGPN_inference_mine/models/pix2pixHD_model.py" beforeDir="false" afterPath="$PROJECT_DIR$/../ACGPN_inference_mine/models/pix2pixHD_model.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../ACGPN_inference_mine/options/base_options.py" beforeDir="false" afterPath="$PROJECT_DIR$/../ACGPN_inference_mine/options/base_options.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../ACGPN_inference_mine/options/test_options.py" beforeDir="false" afterPath="$PROJECT_DIR$/../ACGPN_inference_mine/options/test_options.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../ACGPN_inference_mine/options/train_options.py" beforeDir="false" afterPath="$PROJECT_DIR$/../ACGPN_inference_mine/options/train_options.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../ACGPN_inference_mine/test.py" beforeDir="false" afterPath="$PROJECT_DIR$/../ACGPN_inference_mine/test.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -43,6 +49,23 @@
       <workItem from="1640260064969" duration="1022000" />
       <workItem from="1640261112395" duration="5000" />
       <workItem from="1640278972771" duration="1600000" />
+      <workItem from="1641211992393" duration="318000" />
+      <workItem from="1641213099770" duration="104000" />
+      <workItem from="1641233083985" duration="1080000" />
+      <workItem from="1641290038166" duration="11000" />
+      <workItem from="1641296350283" duration="1295000" />
+      <workItem from="1641319856990" duration="195000" />
+      <workItem from="1641391132032" duration="789000" />
+      <workItem from="1641394020972" duration="84000" />
+      <workItem from="1641463195823" duration="3415000" />
+      <workItem from="1641467541415" duration="16000" />
+      <workItem from="1641836135054" duration="46000" />
+      <workItem from="1641848701981" duration="868000" />
+      <workItem from="1641984388089" duration="1120000" />
+      <workItem from="1641999360968" duration="399000" />
+      <workItem from="1642096031951" duration="1475000" />
+      <workItem from="1642102932668" duration="236000" />
+      <workItem from="1642711400657" duration="729000" />
     </task>
     <servers />
   </component>

@@ -16,7 +16,7 @@ class BaseOptions():
         self.parser.add_argument('--gpu_ids', type=str, default='0',
                                  help='gpu ids: e.g. 0  0,1,2, 0,2. use -1 for CPU')
         self.parser.add_argument('--checkpoints_dir', type=str,
-                                 default='../label2city', help='models are saved here')
+                                 default='../label2city/mine', help='models are saved here')
         self.parser.add_argument(
             '--model', type=str, default='pix2pixHD', help='which model to use')
         self.parser.add_argument('--norm', type=str, default='instance',

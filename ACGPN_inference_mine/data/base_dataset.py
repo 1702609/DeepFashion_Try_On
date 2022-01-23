@@ -17,10 +17,12 @@ def get_transform(normalize=True):
                                                 (0.5, 0.5, 0.5))]
     return transforms.Compose(transform_list)
 
+
 class BaseDataset(data.Dataset):
     def __init__(self, opt):
         self.opt = opt
         super(BaseDataset, self).__init__()
+
         human_names = []
         cloth_names = []
         with open(os.path.join(opt.dataroot, opt.datapairs), 'r') as f:
@@ -74,9 +76,16 @@ class BaseDataset(data.Dataset):
         S_path = osp.join(self.opt.dataroot, self.opt.phase, self.opt.phase + '_posergb', h_name)
         skeleton = Image.open(S_path).convert('RGB')
 
-        Mask_path = osp.join(self.opt.dataroot, self.opt.phase, self.opt.phase + '_imgmask',
-                             h_name.replace('.jpg', '.png'))
-        mask = Image.open(Mask_path).convert('L')
+        M_path = osp.join(self.opt.dataroot, self.opt.phase, self.opt.phase + '_imgmask',
+                          h_name.replace('.jpg', '.png'))
+        mask = Image.open(M_path).convert('L')
+        mask_array = np.array(mask)
+        parse_shape = (mask_array > 0).astype(np.float32)
+        parse_shape_ori = Image.fromarray((parse_shape * 255).astype(np.uint8))
+        parse_shape = parse_shape_ori.resize(
+            (192 // 16, 256 // 16), Image.BILINEAR)
+        mask = parse_shape.resize(
+            (192, 256), Image.BILINEAR)
 
         transform_A = get_transform(normalize=False)
         label_tensor = transform_A(label) * 255
@@ -85,15 +94,17 @@ class BaseDataset(data.Dataset):
         edge_tensor = transform_A(edge)
         color_tensor = transform_B(color)
         skeleton_tensor = transform_B(skeleton)
+        mask_tensor = transform_A(mask)
+        normal_tensor = transform_A(parse_shape_ori)
         pose_name = osp.join(self.opt.dataroot, self.opt.phase, self.opt.phase + '_pose',
                              h_name.replace('.jpg', '_keypoints.json'))
         pose_map = self.image_for_pose(pose_name, transform_B)
-        mask_tensor = transform_A(mask)
-
         return {'label': label_tensor, 'image': image_tensor,
                 'edge': edge_tensor, 'color': color_tensor,
-                'name': c_name, 'skeleton': skeleton_tensor, 'pose': pose_map,
-                'body_mask': mask_tensor}
+                'mask': mask_tensor, 'name': c_name,
+                'colormask': mask_tensor, 'skeleton': skeleton_tensor,
+                'pose': pose_map,
+                'blurry': mask_tensor, 'normal': normal_tensor}
 
     def __len__(self):
         return len(self.human_names)
